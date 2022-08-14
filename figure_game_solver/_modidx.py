@@ -32,4 +32,5 @@ d = { 'settings': { 'allowed_cell_metadata_keys': '',
                 'tst_flags': 'notest',
                 'user': 'johnyesberg',
                 'version': '0.0.1'},
-  'syms': {'figure_game_solver\\core': {'figure_game_solver\\core.foo': 'https://johnyesberg.github.io/figure_game_solver/figure_game_solver\\core.html#foo'}}}
+  'syms': { 'figure_game_solver\\core': {'figure_game_solver\\core.foo': 'https://johnyesberg.github.io/figure_game_solver/figure_game_solver\\core.html#foo'},
+            'figure_game_solver\\grid': { 'figure_game_solver\\grid.Grid': 'https://johnyesberg.github.io/figure_game_solver/figure_game_solver\\grid.html#grid'}}}
