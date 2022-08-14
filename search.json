@@ -1,0 +1,37 @@
+[
+  {
+    "objectID": "grid.html#grid-operations",
+    "href": "grid.html#grid-operations",
+    "title": "figure-game-solver",
+    "section": "Grid operations",
+    "text": "Grid operations\nWe need to be able to pick a column. When that column is picked, we need to remove the item in the bottom row of that column and any connected items. Then all the remaining items should fall downward in their column.\n\nRemove\nWe start with the remove operation. First of all, a mutational function that is not exported – just used internally.\n\ndef remove_recursive(grid, i:int, j:int, value:int):\n    grid[i][j]=0\n    if i>0 and grid[i-1][j]==value:\n        remove_recursive(grid,i-1,j,value)\n    if i<4 and grid[i+1][j]==value:\n        remove_recursive(grid,i+1,j,value)\n    if j>0 and grid[i][j-1]==value:\n        remove_recursive(grid,i,j-1,value)\n    if j<4 and grid[i][j+1]==value:\n        remove_recursive(grid,i,j+1,value)\n\n\n@patch\ndef remove(self:Grid, column:int):\n    value = self.grid[4][column]\n    if value==0:\n        return self\n    result = self.copy()\n    remove_recursive(result.grid,4,column,result.grid[4][column])\n    return result\n\nTest the remove method.\n\nprint(g)\nprint()\nprint(g.remove(0))\nprint()\nprint(g.remove(3))\n\n  1  1  2  1  3\n  2  2  4  3  4\n  1  2  1  4  3\n  3  2  4  4  1\n  4  3  4  4  3\n\n  1  1  2  1  3\n  2  2  4  3  4\n  1  2  1  4  3\n  3  2  4  4  1\n  0  3  4  4  3\n\n  1  1  2  1  3\n  2  2  4  3  4\n  1  2  1  0  3\n  3  2  0  0  1\n  4  3  0  0  3\n\n\n\nh=g.remove(3)\nprint(h)\n\n  1  1  2  1  3\n  2  2  4  3  4\n  1  2  1  0  3\n  3  2  0  0  1\n  4  3  0  0  3\n\n\n\n\nFall\nFor each cell, choose the next highest non-zero item.\n\n@patch\ndef fall(self:Grid):\n    result = self.copy()\n    for j in range(5):\n        for i in range(4,-1,-1):\n            # Find first non-zero value at or above row i\n            if result.grid[i][j]==0:\n                for k in range(i-1,-1,-1):\n                    if (result.grid[k][j]!=0):\n                        result.grid[i][j]=result.grid[k][j]\n                        result.grid[k][j]=0\n                        break\n    return result\n\n\nj = h.fall()\nprint(j)\n\n  1  1  0  0  3\n  2  2  0  0  4\n  1  2  2  0  3\n  3  2  4  1  1\n  4  3  1  3  3\n\n\n\n@patch\ndef pick(self:Grid, column:int):\n    removed = self.remove(column)\n    fallen = removed.fall()\n    return fallen\n\n\nh = g.pick(3)\nprint(h)\n\n  1  1  0  0  3\n  2  2  0  0  4\n  1  2  2  0  3\n  3  2  4  1  1\n  4  3  1  3  3\n\n\nA grid of all zeroes should have is_zero() return True.\n\n@patch\ndef is_zero(self:Grid):\n    for i in range(5):\n        for j in range(5):\n            if self.grid[i][j] != 0:\n                return False\n    return True\n\n\ntest_eq(Grid().is_zero(),True)\n\n\n@patch\ndef picks(self:Grid,columns):\n    return reduce(lambda a,b : a.pick(b), columns, self)\n\n\nh = g.picks([4,3,1,1])\nprint(h)\n\n  1  0  0  0  0\n  2  0  0  0  0\n  1  0  0  0  3\n  3  0  4  1  3\n  4  1  1  3  1\n\n\n\ng_pick_4311_expected = Grid([[1,0,0,0,0],[2,0,0,0,0],[1,0,0,0,3],[3,0,4,1,3],[4,1,1,3,1]])\nassert(h.grid == g_pick_4311_expected.grid)"
+  },
+  {
+    "objectID": "grid.html#solver",
+    "href": "grid.html#solver",
+    "title": "figure-game-solver",
+    "section": "Solver",
+    "text": "Solver\nNow the grid class is working, we can start looking at how to construct a solution. The first thing to try is a breadth-first search.\n\ng0 = Grid()\nprint(g0)\nprint(g0.is_zero())\n\n  0  0  0  0  0\n  0  0  0  0  0\n  0  0  0  0  0\n  0  0  0  0  0\n  0  0  0  0  0\nTrue\n\n\n\ng1 = Grid([[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,3,0,0]])\nprint(g1)\n\n  0  0  0  0  0\n  0  0  0  0  0\n  0  0  0  0  0\n  0  0  0  0  0\n  0  0  3  0  0\n\n\n\ng2 = Grid([[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,3,2,0]])\nprint(g2)\n\n  0  0  0  0  0\n  0  0  0  0  0\n  0  0  0  0  0\n  0  0  0  0  0\n  0  0  3  2  0\n\n\n\ndef search(grid:Grid, columns:list):\n    queue = [columns]\n    while len(queue)>0:\n        candidate = queue.pop(0)\n        #print(f\"Candidate: {candidate}\")\n        result = grid.picks(candidate)\n        if result.is_zero():\n            return candidate\n        for j in range(5):\n            if result.grid[4][j] != 0:\n                next = candidate + [j]\n                queue.append(next)\n\n\nresult = search(g0,[])\nprint(result)\n\nCandidate: []\n[]\n\n\n\nresult = search(g1,[])\nprint(result)\n\nCandidate: []\nCandidate: [2]\n[2]\n\n\n\nresult = search(g2,[2])\nprint(result)\n\nCandidate: [2]\nCandidate: [2, 3]\n[2, 3]\n\n\n\nprint(g)\nstart = time.time()\nresult = search(g,[])\nend = time.time()\n\nprint(f\"Found {result} in {end-start} seconds\")\n\n  1  1  2  1  3\n  2  2  4  3  4\n  1  2  1  4  3\n  3  2  4  4  1\n  4  3  4  4  3\nFound [0, 0, 4, 2, 1, 3, 0, 2, 4] in 69.04775381088257 seconds"
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "figure-game-solver",
+    "section": "",
+    "text": "This file will become your README and also the index of your documentation."
+  },
+  {
+    "objectID": "index.html#install",
+    "href": "index.html#install",
+    "title": "figure-game-solver",
+    "section": "Install",
+    "text": "Install\npip install figure-game-solver"
+  },
+  {
+    "objectID": "index.html#how-to-use",
+    "href": "index.html#how-to-use",
+    "title": "figure-game-solver",
+    "section": "How to use",
+    "text": "How to use\nFill me in please! Don’t forget code examples:\n\nh = Grid()\nprint(h)\n\n  0  0  0  0  0\n  0  0  0  0  0\n  0  0  0  0  0\n  0  0  0  0  0\n  0  0  0  0  0"
+  }
+]

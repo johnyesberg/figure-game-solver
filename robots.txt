@@ -1,0 +1,1 @@
+Sitemap: https://johnyesberg.github.io/figure_game_solver/sitemap.xml
